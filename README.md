@@ -94,10 +94,3 @@ Algumas configuracoes estao hardcoded em `api/dependencies.py` e devem ser movid
 
 - Ainda nao existe um `main.py` ou app FastAPI no repo. Para expor a API, monte um app e registre o router de `api/routes/po_routes.py`.
 - O caminho `infrastructure/persistence/...` e referenciado, mas nao esta presente neste repositorio.
-
-## Proximos passos sugeridos
-
-- Adicionar `main.py` com o app FastAPI e registro de rotas
-- Implementar o repositorio de POs (camada de persistencia)
-- Extrair configuracoes para `ENV`
-- Adicionar testes unitarios para os use cases
