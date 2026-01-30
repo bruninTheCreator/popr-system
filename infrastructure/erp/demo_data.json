@@ -1,0 +1,16 @@
+{
+  "materials": {
+    "MAT-001": {
+      "stock": 120,
+      "open_pos": ["PO-1001", "PO-1002"]
+    },
+    "MAT-002": {
+      "stock": 5,
+      "open_pos": []
+    },
+    "MAT-003": {
+      "stock": 2,
+      "open_pos": ["PO-2001"]
+    }
+  }
+}
