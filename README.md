@@ -67,6 +67,39 @@ curl -X POST http://localhost:8000/api/v1/pos/process ^
   -d "{\"po_number\":\"PO-12345\",\"user\":\"maria\"}"
 ```
 
+### Materiais (ProcessPOUseCase simplificado)
+
+Endpoints adicionais:
+
+- `POST /process-material` - processa o fluxo de materiais
+- `GET /history/{material_id}` - retorna o historico de status do material
+
+Exemplo (processar material):
+
+```bash
+curl -X POST http://localhost:8000/process-material \
+  -H "Content-Type: application/json" \
+  -d "{\"material_id\":\"MAT-002\",\"minimum_stock\":10,\"notify_email\":\"compras@empresa.com\"}"
+```
+
+Resposta esperada:
+
+```json
+{
+  "success": true,
+  "material_id": "MAT-002",
+  "message": "Material sem PO aberta.",
+  "history": [
+    { "status": "RECEBIDO", "timestamp": "2024-01-10T10:00:00" },
+    { "status": "VERIFICANDO_CADASTRO", "timestamp": "2024-01-10T10:00:00" },
+    { "status": "CONSULTANDO_ESTOQUE", "timestamp": "2024-01-10T10:00:01" },
+    { "status": "SEM_ESTOQUE", "timestamp": "2024-01-10T10:00:01" },
+    { "status": "CONSULTANDO_PO", "timestamp": "2024-01-10T10:00:02" },
+    { "status": "SEM_PO", "timestamp": "2024-01-10T10:00:02" }
+  ]
+}
+```
+
 ## UI (Dashboard)
 
 O dashboard React esta em `ui/components/POPRDashboard.jsx` e:
@@ -84,6 +117,12 @@ Algumas configuracoes estao hardcoded em `api/dependencies.py` e devem ser movid
 - SMTP para email
 - webhook do Slack (se usado)
 
+### Demo data
+
+Arquivo de exemplo para o provider DEMO:
+
+- `infrastructure/erp/demo_data.json`
+
 ## Dependencias principais (observadas no codigo)
 
 - API: FastAPI, Pydantic, SQLAlchemy (async), aiosqlite
@@ -92,5 +131,5 @@ Algumas configuracoes estao hardcoded em `api/dependencies.py` e devem ser movid
 
 ## Observacoes
 
-- Ainda nao existe um `main.py` ou app FastAPI no repo. Para expor a API, monte um app e registre o router de `api/routes/po_routes.py`.
+- Existe um app FastAPI em `api/main.py` que registra as rotas de PO e materiais.
 - O caminho `infrastructure/persistence/...` e referenciado, mas nao esta presente neste repositorio.
