@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from ...application.ports.erp_provider_port import ERPProviderPort
+from application.ports.erp_provider_port import ERPProviderPort
 
 
 class SapGuiProvider(ERPProviderPort):

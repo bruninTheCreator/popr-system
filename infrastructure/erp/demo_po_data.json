@@ -1,0 +1,98 @@
+{
+  "pos": [
+    {
+      "po_number": "PO-1001",
+      "vendor_code": "V001",
+      "vendor_name": "Fornecedor Alpha",
+      "total_amount": 12500.5,
+      "currency": "BRL",
+      "status": "awaiting_approval",
+      "sap_doc_number": "45001001",
+      "sap_fiscal_year": "2026",
+      "items": [
+        {
+          "item_number": "10",
+          "description": "Cabo optico",
+          "quantity": 10,
+          "unit_price": 450.05,
+          "total_price": 4500.5
+        },
+        {
+          "item_number": "20",
+          "description": "Conector SC",
+          "quantity": 50,
+          "unit_price": 160.0,
+          "total_price": 8000.0
+        }
+      ]
+    },
+    {
+      "po_number": "PO-1002",
+      "vendor_code": "V014",
+      "vendor_name": "Fornecedor Beta",
+      "total_amount": 3200.0,
+      "currency": "BRL",
+      "status": "pending",
+      "sap_doc_number": "45001002",
+      "sap_fiscal_year": "2026",
+      "items": [
+        {
+          "item_number": "10",
+          "description": "Roteador",
+          "quantity": 2,
+          "unit_price": 1600.0,
+          "total_price": 3200.0
+        }
+      ]
+    },
+    {
+      "po_number": "PO-1003",
+      "vendor_code": "V007",
+      "vendor_name": "Fornecedor Gama",
+      "total_amount": 7800.0,
+      "currency": "BRL",
+      "status": "processing",
+      "sap_doc_number": "45001003",
+      "sap_fiscal_year": "2026",
+      "items": [
+        {
+          "item_number": "10",
+          "description": "Switch 48 portas",
+          "quantity": 1,
+          "unit_price": 7800.0,
+          "total_price": 7800.0
+        }
+      ]
+    },
+    {
+      "po_number": "PO-1004",
+      "vendor_code": "V021",
+      "vendor_name": "Fornecedor Delta",
+      "total_amount": 1500.0,
+      "currency": "BRL",
+      "status": "completed",
+      "sap_doc_number": "45001004",
+      "sap_fiscal_year": "2026",
+      "items": []
+    },
+    {
+      "po_number": "PO-1005",
+      "vendor_code": "V099",
+      "vendor_name": "Fornecedor Epsilon",
+      "total_amount": 920.0,
+      "currency": "BRL",
+      "status": "error",
+      "sap_doc_number": "45001005",
+      "sap_fiscal_year": "2026",
+      "items": [
+        {
+          "item_number": "10",
+          "description": "Antena setorial",
+          "quantity": 1,
+          "unit_price": 920.0,
+          "total_price": 920.0
+        }
+      ]
+    }
+  ]
+}

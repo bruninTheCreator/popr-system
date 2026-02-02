@@ -8,7 +8,7 @@
       "args": ["run", "dev"],
       "options": {
         "cwd": "${workspaceFolder}\\\\ui"
-      },
+      }, 
       "isBackground": true,
       "problemMatcher": {
         "owner": "vite",

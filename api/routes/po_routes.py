@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from decimal import Decimal
 
-from ...domain.entities.purchase_order import POStatus
-from ...domain.interfaces.po_repository import PORepository
-from ...application.use_cases.process_po import ProcessPOCommand, ProcessPOUseCase
-from ...application.use_cases.approve_po import ApprovePOCommand, RejectPOCommand
-from ..dependencies import (
+from domain.entities.purchase_order import POStatus
+from domain.interfaces.po_repository import PORepository
+from application.use_cases.process_po import ProcessPOCommand, ProcessPOUseCase
+from application.use_cases.approve_po import ApprovePOCommand, RejectPOCommand
+from api.dependencies import (
     get_po_repository,
     get_process_po_use_case,
     get_approve_po_use_case,

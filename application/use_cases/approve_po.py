@@ -10,11 +10,11 @@ from typing import Optional, List
 import logging
 
 # Domain imports
-from ...domain.entities.purchase_order import PurchaseOrder, POStatus
-from ...domain.interfaces.po_repository import PORepository
-from ...domain.interfaces.sap_gateway import SAPGateway
-from ...domain.interfaces.notification_service import NotificationService
-from ...domain.exceptions.domain_exceptions import (
+from domain.entities.purchase_order import PurchaseOrder, POStatus
+from domain.interfaces.po_repository import PORepository
+from domain.interfaces.sap_gateway import SAPGateway
+from domain.interfaces.notification_service import NotificationService
+from domain.exceptions.domain_exceptions import (
     PONotFoundException,
     InvalidApprovalException,
     InvalidRejectionException

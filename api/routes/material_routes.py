@@ -4,13 +4,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from ...application.use_cases.process_material import (
+from application.use_cases.process_material import (
     ProcessMaterialCommand,
     ProcessMaterialUseCase,
 )
-from ...application.ports.repository_port import RepositoryPort
-from ...domain.entities.material_status import MaterialStatusEntry
-from ..dependencies import (
+from application.ports.repository_port import RepositoryPort
+from domain.entities.material_status import MaterialStatusEntry
+from api.dependencies import (
     get_material_repository,
     get_process_material_use_case,
 )

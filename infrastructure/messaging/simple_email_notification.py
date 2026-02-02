@@ -1,7 +1,7 @@
 from typing import Optional
 import logging
 
-from ...application.ports.notification_port import NotificationPort
+from application.ports.notification_port import NotificationPort
 
 
 class SimpleEmailNotification(NotificationPort):

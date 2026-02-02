@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from ...domain.entities.material_status import MaterialStatus, MaterialStatusEntry
-from ...application.ports.repository_port import RepositoryPort
+from domain.entities.material_status import MaterialStatus, MaterialStatusEntry
+from application.ports.repository_port import RepositoryPort
 
 
 class JsonStatusRepository(RepositoryPort):

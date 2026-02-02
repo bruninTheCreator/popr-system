@@ -12,17 +12,17 @@ import logging
 from decimal import Decimal
 
 # Domain imports
-from ...domain.entities.purchase_order import PurchaseOrder, POStatus
-from ...domain.interfaces.po_repository import PORepository
-from ...domain.interfaces.sap_gateway import SAPGateway
-from ...domain.interfaces.notification_service import NotificationService
-from ...domain.exceptions.domain_exceptions import (
+from domain.entities.purchase_order import PurchaseOrder, POStatus
+from domain.interfaces.po_repository import PORepository
+from domain.interfaces.sap_gateway import SAPGateway
+from domain.interfaces.notification_service import NotificationService
+from domain.exceptions.domain_exceptions import (
     PONotFoundException,
     POValidationException,
     POAlreadyLockedException,
     ReconciliationException
 )
-from ...domain.events.po_events import (
+from domain.events.po_events import (
     POProcessingStarted,
     POValidated,
     SAPDataFetched,
@@ -133,6 +133,10 @@ class ProcessPOUseCase:
             self.logger.info(f"[STEP 1] Fetching PO {command.po_number}")
             
             po = await self._fetch_po(command.po_number)
+
+            if po.status == POStatus.ERROR:
+                po.transition_to(POStatus.PENDING, "Requeue after error", command.user)
+                await self.po_repo.save(po)
             
             # Publica evento
             events_count += 1

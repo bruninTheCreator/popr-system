@@ -12,7 +12,7 @@ from datetime import datetime
 import time
 
 # Domain imports
-from ...domain.interfaces.sap_gateway import SAPGateway
+from domain.interfaces.sap_gateway import SAPGateway
 
 
 class SAPConnectionError(Exception):
@@ -421,6 +421,21 @@ class SAPGUIAdapter(SAPGateway):
             self.session.findById("wnd[0]").sendVKey(3)
             
             return []
+
+    async def create_po(self, po_data: Dict[str, Any]) -> Optional[str]:
+        self._ensure_connected()
+        self.logger.warning("create_po not implemented for SAP GUI adapter")
+        return None
+
+    async def update_po(self, po_number: str, updates: Dict[str, Any]) -> bool:
+        self._ensure_connected()
+        self.logger.warning("update_po not implemented for SAP GUI adapter")
+        return False
+
+    async def get_po_status(self, po_number: str) -> Optional[str]:
+        self._ensure_connected()
+        self.logger.warning("get_po_status not implemented for SAP GUI adapter")
+        return None
             
         except Exception as e:
             self.logger.error(f"Search failed: {str(e)}")

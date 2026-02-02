@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from ..ports.erp_provider_port import ERPProviderPort
-from ..ports.notification_port import NotificationPort
-from ..ports.repository_port import RepositoryPort
-from ...domain.entities.material_status import MaterialStatus, MaterialStatusEntry
+from application.ports.erp_provider_port import ERPProviderPort
+from application.ports.notification_port import NotificationPort
+from application.ports.repository_port import RepositoryPort
+from domain.entities.material_status import MaterialStatus, MaterialStatusEntry
 
 
 @dataclass

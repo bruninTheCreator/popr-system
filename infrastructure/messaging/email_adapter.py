@@ -11,8 +11,8 @@ import logging
 from datetime import datetime
 
 # Domain imports
-from ...domain.entities.purchase_order import PurchaseOrder
-from ...domain.interfaces.notification_service import NotificationService
+from domain.entities.purchase_order import PurchaseOrder
+from domain.interfaces.notification_service import NotificationService
 
 
 class EmailConfig:
@@ -380,3 +380,15 @@ class EmailNotificationService(NotificationService):
         except Exception as e:
             self.logger.error(f"❌ Failed to send email: {str(e)}")
             return False
+
+    # Compatibilidade com interfaces antigas
+    def send_email(self, to: List[str], subject: str, body: str) -> bool:
+        self.logger.info("send_email called for %s (sync fallback)", to)
+        return False
+
+    def send_slack_message(self, channel: str, message: str) -> bool:
+        self.logger.info("send_slack_message called for %s (not supported)", channel)
+        return False
+
+    def notify_po_status_change(self, po_number: str, new_status: str, recipients: List[str]) -> None:
+        self.logger.info("PO %s status -> %s (%s)", po_number, new_status, recipients)

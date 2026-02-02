@@ -1,27 +1,31 @@
-# popr/domain/interfaces/notification_service.py
 """
-Interface - Notification Service
-Contrato para serviços de notificação
+Interface do Serviço de Notificações
 """
-
 from abc import ABC, abstractmethod
 from typing import List
 
+from domain.entities.purchase_order import PurchaseOrder
+
 
 class NotificationService(ABC):
-    """Interface para serviço de notificações"""
-    
+    """Interface para envio de notificações."""
+
     @abstractmethod
-    def send_email(self, to: List[str], subject: str, body: str) -> bool:
-        """Envia email"""
+    async def notify_approval_required(self, po: PurchaseOrder, recipients: List[str]) -> bool:
         pass
-    
+
     @abstractmethod
-    def send_slack_message(self, channel: str, message: str) -> bool:
-        """Envia mensagem Slack"""
+    async def notify_approved(self, po: PurchaseOrder, recipients: List[str]) -> bool:
         pass
-    
+
     @abstractmethod
-    def notify_po_status_change(self, po_number: str, new_status: str, recipients: List[str]) -> None:
-        """Notifica mudança de status da PO"""
+    async def notify_rejected(self, po: PurchaseOrder, recipients: List[str], reason: str) -> bool:
+        pass
+
+    @abstractmethod
+    async def notify_error(self, po: PurchaseOrder, error_message: str, recipients: List[str]) -> bool:
+        pass
+
+    @abstractmethod
+    async def notify_completed(self, po: PurchaseOrder, recipients: List[str]) -> bool:
         pass

@@ -1,6 +1,6 @@
 from typing import List, Protocol
 
-from ...domain.entities.material_status import MaterialStatus, MaterialStatusEntry
+from domain.entities.material_status import MaterialStatus, MaterialStatusEntry
 
 
 class RepositoryPort(Protocol):

@@ -1,135 +1,254 @@
-# POPR System
+# POPR System — documentação detalhada (arquivo por arquivo)
 
-Purchase Order Processing & Reconciliation (POPR) e um sistema para orquestrar o ciclo completo de uma Purchase Order: validacao, reconciliacao com SAP, aprovacao (automatica ou manual), postagem de invoice e notificacoes.
+Este README descreve **todos os arquivos relevantes** do projeto e o fluxo de chamada **arquivo → arquivo**.
 
-## Visao geral
+## Visão geral do fluxo
 
-O fluxo principal esta no use case `ProcessPOUseCase` e executa:
+1) **UI** (`ui/src/components/POPRDashboard.jsx`) chama a **API** via `/api/v1/...`.
+2) **API** (`api/routes/*.py`) cria comandos e chama **Use Cases** (`application/use_cases/*.py`).
+3) **Use Cases** orquestram **Domain** (`domain/*`) e **Infrastructure** (`infrastructure/*`).
+4) **Infrastructure** persiste no SQLite e conversa com SAP (demo ou GUI).
 
-1. Buscar a PO
-2. Validar dados
-3. Bloquear a PO e (opcionalmente) o documento no SAP
-4. Buscar dados no SAP
-5. Reconciliar dados
-6. Aprovar (automatica ou manual)
-7. Postar invoice no SAP
-8. Finalizar e notificar
+---
 
-Existe tambem um fluxo de aprovacao/rejeicao manual (`ApprovePOUseCase` e `RejectPOUseCase`) e um dashboard React para acompanhamento.
+## API
 
-## Arquitetura
+### `api/__init__.py`
+- Marca `api` como pacote Python.
 
-O projeto segue um estilo Clean/Hexagonal:
+### `api/main.py`
+- Cria o `FastAPI` app.
+- Registra rotas: `po_routes` e `material_routes`.
+- No startup: inicializa o banco e roda o seed (`seed_demo_pos`).
 
-- `domain/`: entidades, regras de negocio e contratos (interfaces)
-- `application/`: casos de uso e orquestracao
-- `infrastructure/`: adapters (SAP GUI, email, Slack)
-- `api/`: endpoints FastAPI e injecao de dependencias
-- `ui/`: componente React do dashboard
+### `api/dependencies.py`
+- **Dependency Injection** do FastAPI.
+- Cria `Database` (SQLite async).
+- Injeta:
+  - `PORepository` (SQLAlchemy)
+  - `SAPGateway` (demo ou SAP GUI)
+  - `NotificationService` (simple ou email)
+- Usa envs:
+  - `POPR_SAP_PROVIDER` (demo|sap)
+  - `POPR_NOTIFY_PROVIDER` (simple|email)
 
-## Estrutura do repositorio
+### `api/routes/__init__.py`
+- Marca `routes` como pacote Python.
 
+### `api/routes/po_routes.py`
+- Endpoints `/api/v1/pos/*`.
+- Cria comandos e chama:
+  - `ProcessPOUseCase`
+  - `ApprovePOUseCase`
+  - `RejectPOUseCase`
+- Mapeia entidades de domínio para DTOs de resposta.
+
+### `api/routes/material_routes.py`
+- Endpoints:
+  - `POST /process-material`
+  - `GET /history/{material_id}`
+- Chama `ProcessMaterialUseCase`.
+
+---
+
+## Application (casos de uso e portas)
+
+### `application/__init__.py`
+- Marca `application` como pacote.
+
+### `application/use_cases/__init__.py`
+- Marca `use_cases` como pacote.
+
+### `application/use_cases/process_po.py`
+- **Fluxo principal**:
+  1. Buscar PO
+  2. Validar
+  3. Lock
+  4. SAP data
+  5. Reconciliar
+  6. Aprovar
+  7. Postar invoice
+  8. Finalizar
+  9. Notificar
+- Usa:
+  - `PORepository`
+  - `SAPGateway`
+  - `NotificationService`
+  - Entidade `PurchaseOrder`
+
+### `application/use_cases/approve_po.py`
+- Fluxo de **aprovação/rejeição manual**.
+- Posta invoice se `post_invoice = True`.
+
+### `application/use_cases/process_material.py`
+- Fluxo de materiais (estoque + POs abertas).
+- Usa `ERPProviderPort`, `RepositoryPort`, `NotificationPort`.
+
+### `application/ports/__init__.py`
+- Exporta interfaces de portas.
+
+### `application/ports/erp_provider_port.py`
+- Contrato para consulta de estoque/POs em ERP.
+
+### `application/ports/repository_port.py`
+- Contrato para armazenar histórico de materiais.
+
+### `application/ports/notification_port.py`
+- Contrato simples de envio de email (fluxo de materiais).
+
+---
+
+## Domain
+
+### `domain/__init__.py`
+- Marca `domain` como pacote.
+
+### `domain/entities/__init__.py`
+- Marca `entities` como pacote.
+
+### `domain/entities/purchase_order.py`
+- Entidade central `PurchaseOrder`.
+- Regras de transição de status.
+- Lock / unlock.
+- Validações de consistência.
+
+### `domain/entities/material_status.py`
+- Entidade e estados do fluxo de materiais.
+
+### `domain/interfaces/__init__.py`
+- Exporta as interfaces do domínio.
+
+### `domain/interfaces/po_repository.py`
+- Contrato do repositório de POs.
+
+### `domain/interfaces/sap_gateway.py`
+- Contrato do gateway SAP (async).
+
+### `domain/interfaces/notification_service.py`
+- Contrato de notificações (async).
+
+### `domain/exceptions/__init__.py`
+- Marca `exceptions` como pacote.
+
+### `domain/exceptions/domain_exceptions.py`
+- Exceções específicas de negócio.
+
+### `domain/events/__init__.py`
+- Marca `events` como pacote.
+
+### `domain/events/po_events.py`
+- Eventos de domínio (registrados pelo fluxo).
+
+---
+
+## Infrastructure
+
+### Pacotes
+- `infrastructure/__init__.py`
+- `infrastructure/persistence/__init__.py`
+- `infrastructure/persistence/sqlalchemy/__init__.py`
+- `infrastructure/erp/__init__.py`
+- `infrastructure/sap/__init__.py`
+- `infrastructure/messaging/__init__.py`
+- `infrastructure/repository/__init__.py`
+
+### Persistência (SQLite + SQLAlchemy)
+- `infrastructure/persistence/sqlalchemy/models.py`
+  - Modelos `POModel` e `POItemModel`.
+- `infrastructure/persistence/sqlalchemy/database.py`
+  - Engine async e `sessionmaker`.
+- `infrastructure/persistence/sqlalchemy/po_repository_impl.py`
+  - Implementa `PORepository` usando SQLAlchemy.
+- `infrastructure/persistence/sqlalchemy/seed.py`
+  - Seed inicial do banco.
+
+### SAP / ERP
+- `infrastructure/sap/demo_sap_gateway.py`
+  - SAP demo: lê `demo_po_data.json` e simula SAP.
+- `infrastructure/sap/sap_gui_adapter.py`
+  - Adapter real via SAP GUI Scripting.
+- `infrastructure/erp/demo_provider.py`
+  - Provider demo para fluxo de materiais.
+- `infrastructure/erp/sap_gui_provider.py`
+  - Provider stub (não implementado).
+
+### Mensageria / Notificação
+- `infrastructure/messaging/simple_notification_service.py`
+  - Notificação simples (log).
+- `infrastructure/messaging/email_adapter.py`
+  - Envio SMTP (notificações formais).
+- `infrastructure/messaging/slack_adapter.py`
+  - Envio via webhook do Slack.
+- `infrastructure/messaging/simple_email_notification.py`
+  - Implementa `NotificationPort` do fluxo de materiais.
+
+### Repositório de materiais
+- `infrastructure/repository/json_status_repository.py`
+  - Persistência do histórico de materiais em JSON.
+- `infrastructure/repository/material_history.json`
+  - Dados persistidos do histórico.
+
+---
+
+## UI
+
+### `ui/index.html`
+- Ponto de entrada do Vite.
+
+### `ui/vite.config.js`
+- Proxy `/api` → `http://localhost:5174` (backend).
+
+### `ui/package.json` / `ui/package-lock.json`
+- Dependências e scripts do frontend.
+
+### `ui/src/main.jsx`
+- Bootstrap React (`createRoot`).
+
+### `ui/src/App.jsx`
+- Renderiza `POPRDashboard`.
+
+### `ui/src/components/POPRDashboard.jsx`
+- Tela principal.
+- Busca POs na API.
+- Aciona Processar/Aprovar/Rejeitar.
+
+### `ui/src/index.css`
+- Estilos globais do dashboard.
+
+---
+
+## Dados e arquivos gerados
+
+### `infrastructure/erp/demo_po_data.json`
+- Dados demo de POs (seed do banco e SAP demo).
+
+### `infrastructure/erp/demo_data.json`
+- Dados demo do fluxo de materiais.
+
+### `popr.db`
+- SQLite gerado automaticamente.
+
+### `uvicorn.out.log` / `uvicorn.err.log`
+- Logs do backend (gerados no ambiente local).
+
+---
+
+## Execução local
+
+Backend (porta 5174):
 ```bash
-
-api/
-  dependencies.py
-  routes/po_routes.py
-application/
-  use_cases/
-domain/
-  entities/
-  events/
-  exceptions/
-  interfaces/
-infrastructure/
-  messaging/
-  sap/
-ui/
-  components/POPRDashboard.jsx
+python -m uvicorn api.main:app --port 5174
 ```
 
-## Endpoints (API)
-
-Base: `/api/v1/pos`
-
-- `POST /process` - processa uma PO completa
-- `POST /approve` - aprova uma PO manualmente
-- `POST /reject` - rejeita uma PO
-- `GET /{po_number}` - busca uma PO por numero
-- `GET /` - lista POs (com filtro opcional de status)
-- `GET /pending-approval/` - lista POs aguardando aprovacao
-
-Exemplo (processar PO):
-
+Frontend (porta 5173):
 ```bash
-curl -X POST http://localhost:8000/api/v1/pos/process ^
-  -H "Content-Type: application/json" ^
-  -d "{\"po_number\":\"PO-12345\",\"user\":\"maria\"}"
+cd ui
+npm run dev
 ```
 
-### Materiais (ProcessPOUseCase simplificado)
+---
 
-Endpoints adicionais:
+## Observações
 
-- `POST /process-material` - processa o fluxo de materiais
-- `GET /history/{material_id}` - retorna o historico de status do material
-
-Exemplo (processar material):
-
-```bash
-curl -X POST http://localhost:8000/process-material \
-  -H "Content-Type: application/json" \
-  -d "{\"material_id\":\"MAT-002\",\"minimum_stock\":10,\"notify_email\":\"compras@empresa.com\"}"
-```
-
-Resposta esperada:
-
-```json
-{
-  "success": true,
-  "material_id": "MAT-002",
-  "message": "Material sem PO aberta.",
-  "history": [
-    { "status": "RECEBIDO", "timestamp": "2024-01-10T10:00:00" },
-    { "status": "VERIFICANDO_CADASTRO", "timestamp": "2024-01-10T10:00:00" },
-    { "status": "CONSULTANDO_ESTOQUE", "timestamp": "2024-01-10T10:00:01" },
-    { "status": "SEM_ESTOQUE", "timestamp": "2024-01-10T10:00:01" },
-    { "status": "CONSULTANDO_PO", "timestamp": "2024-01-10T10:00:02" },
-    { "status": "SEM_PO", "timestamp": "2024-01-10T10:00:02" }
-  ]
-}
-```
-
-## UI (Dashboard)
-
-O dashboard React esta em `ui/components/POPRDashboard.jsx` e:
-
-- consome a API em `http://localhost:8000/api/v1`
-- permite processar, aprovar ou rejeitar POs
-- oferece filtros por status e exportacao CSV
-
-## Configuracao
-
-Algumas configuracoes estao hardcoded em `api/dependencies.py` e devem ser movidas para variaveis de ambiente:
-
-- `DATABASE_URL`
-- credenciais do SAP
-- SMTP para email
-- webhook do Slack (se usado)
-
-### Demo data
-
-Arquivo de exemplo para o provider DEMO:
-
-- `infrastructure/erp/demo_data.json`
-
-## Dependencias principais (observadas no codigo)
-
-- API: FastAPI, Pydantic, SQLAlchemy (async), aiosqlite
-- Infra: pywin32 (SAP GUI Scripting), aiohttp (Slack)
-- UI: React, lucide-react
-
-## Observacoes
-
-- Existe um app FastAPI em `api/main.py` que registra as rotas de PO e materiais.
-- O caminho `infrastructure/persistence/...` e referenciado, mas nao esta presente neste repositorio.
+- Arquivos `__pycache__/*.pyc` são artefatos do Python e podem ser ignorados.
+- A integração SAP real exige SAP GUI e `pywin32` instalado.

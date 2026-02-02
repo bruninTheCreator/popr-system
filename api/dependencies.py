@@ -10,19 +10,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from fastapi import Depends
 
-from ..infrastructure.persistence.sqlalchemy.database import Database
-from ..infrastructure.persistence.sqlalchemy.po_repository_impl import SQLAlchemyPORepository
-from ..infrastructure.sap.sap_gui_adapter import SAPGUIAdapter
-from ..infrastructure.messaging.email_adapter import EmailNotificationService, EmailConfig
-from ..infrastructure.messaging.slack_adapter import SlackNotificationService
-from ..infrastructure.messaging.simple_email_notification import SimpleEmailNotification
-from ..infrastructure.erp.demo_provider import DemoProvider
-from ..infrastructure.erp.sap_gui_provider import SapGuiProvider
-from ..infrastructure.repository.json_status_repository import JsonStatusRepository
-from ..application.use_cases.process_po import ProcessPOUseCase
-from ..application.use_cases.approve_po import ApprovePOUseCase, RejectPOUseCase
-from ..application.use_cases.process_material import ProcessMaterialUseCase
-from ..domain.interfaces.notification_service import NotificationService
+from infrastructure.persistence.sqlalchemy.database import Database
+from infrastructure.persistence.sqlalchemy.po_repository_impl import SQLAlchemyPORepository
+from infrastructure.sap.demo_sap_gateway import DemoSAPGateway
+from infrastructure.messaging.email_adapter import EmailNotificationService, EmailConfig
+from infrastructure.messaging.slack_adapter import SlackNotificationService
+from infrastructure.messaging.simple_email_notification import SimpleEmailNotification
+from infrastructure.messaging.simple_notification_service import SimpleNotificationService
+from infrastructure.erp.demo_provider import DemoProvider
+from infrastructure.erp.sap_gui_provider import SapGuiProvider
+from infrastructure.repository.json_status_repository import JsonStatusRepository
+from application.use_cases.process_po import ProcessPOUseCase
+from application.use_cases.approve_po import ApprovePOUseCase, RejectPOUseCase
+from application.use_cases.process_material import ProcessMaterialUseCase
+from domain.interfaces.notification_service import NotificationService
+from domain.interfaces.sap_gateway import SAPGateway
 
 # Configuração global (isso viria de um arquivo de config)
 DATABASE_URL = "sqlite+aiosqlite:///./popr.db"
@@ -60,19 +62,25 @@ async def get_po_repository(
     return SQLAlchemyPORepository(session)
 
 
-async def get_sap_gateway() -> AsyncGenerator[SAPGUIAdapter, None]:
+async def get_sap_gateway() -> AsyncGenerator[SAPGateway, None]:
     """
     Retorna o gateway SAP
     
     TODO: Configurar com variáveis de ambiente
     """
-    sap = SAPGUIAdapter(
-        system_id="PRD",
-        client="100",
-        user="SAP_USER",
-        password="SAP_PASS",
-        language="PT"
-    )
+    provider = os.getenv("POPR_SAP_PROVIDER", "demo").lower()
+    if provider == "sap":
+        from infrastructure.sap.sap_gui_adapter import SAPGUIAdapter
+        sap = SAPGUIAdapter(
+            system_id="PRD",
+            client="100",
+            user="SAP_USER",
+            password="SAP_PASS",
+            language="PT"
+        )
+    else:
+        demo_path = BASE_DIR / "infrastructure" / "erp" / "demo_po_data.json"
+        sap = DemoSAPGateway(demo_path)
     
     # Conecta
     await sap.connect()
@@ -89,6 +97,10 @@ async def get_notification_service() -> NotificationService:
     
     Pode ser Email, Slack, ou Composite
     """
+    provider = os.getenv("POPR_NOTIFY_PROVIDER", "simple").lower()
+    if provider == "simple":
+        return SimpleNotificationService(logger)
+
     # Email config
     email_config = EmailConfig(
         smtp_host="smtp.gmail.com",
