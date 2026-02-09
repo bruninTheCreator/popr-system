@@ -1,254 +1,217 @@
-# POPR System — documentação detalhada (arquivo por arquivo)
+# POPR System — visão detalhada (linguagem simples)
 
-Este README descreve **todos os arquivos relevantes** do projeto e o fluxo de chamada **arquivo → arquivo**.
+## O que é
 
-## Visão geral do fluxo
+O POPR é um sistema que organiza o ciclo completo de uma Purchase Order (PO).  
+Ele pega a PO, confere com o SAP (simulado no demo), valida, aprova quando necessário, finaliza e registra.
 
-1) **UI** (`ui/src/components/POPRDashboard.jsx`) chama a **API** via `/api/v1/...`.
-2) **API** (`api/routes/*.py`) cria comandos e chama **Use Cases** (`application/use_cases/*.py`).
-3) **Use Cases** orquestram **Domain** (`domain/*`) e **Infrastructure** (`infrastructure/*`).
-4) **Infrastructure** persiste no SQLite e conversa com SAP (demo ou GUI).
+## Objetivo em uma frase
 
----
-
-## API
-
-### `api/__init__.py`
-- Marca `api` como pacote Python.
-
-### `api/main.py`
-- Cria o `FastAPI` app.
-- Registra rotas: `po_routes` e `material_routes`.
-- No startup: inicializa o banco e roda o seed (`seed_demo_pos`).
-
-### `api/dependencies.py`
-- **Dependency Injection** do FastAPI.
-- Cria `Database` (SQLite async).
-- Injeta:
-  - `PORepository` (SQLAlchemy)
-  - `SAPGateway` (demo ou SAP GUI)
-  - `NotificationService` (simple ou email)
-- Usa envs:
-  - `POPR_SAP_PROVIDER` (demo|sap)
-  - `POPR_NOTIFY_PROVIDER` (simple|email)
-
-### `api/routes/__init__.py`
-- Marca `routes` como pacote Python.
-
-### `api/routes/po_routes.py`
-- Endpoints `/api/v1/pos/*`.
-- Cria comandos e chama:
-  - `ProcessPOUseCase`
-  - `ApprovePOUseCase`
-  - `RejectPOUseCase`
-- Mapeia entidades de domínio para DTOs de resposta.
-
-### `api/routes/material_routes.py`
-- Endpoints:
-  - `POST /process-material`
-  - `GET /history/{material_id}`
-- Chama `ProcessMaterialUseCase`.
+Garantir que cada PO passe pelo mesmo fluxo, com rastreabilidade e sem depender de validações manuais fora do sistema.
 
 ---
 
-## Application (casos de uso e portas)
+## Visão por partes (bem direto)
 
-### `application/__init__.py`
-- Marca `application` como pacote.
+### 1) Tela (UI)
 
-### `application/use_cases/__init__.py`
-- Marca `use_cases` como pacote.
+Onde o usuário trabalha:
 
-### `application/use_cases/process_po.py`
-- **Fluxo principal**:
-  1. Buscar PO
-  2. Validar
-  3. Lock
-  4. SAP data
-  5. Reconciliar
-  6. Aprovar
-  7. Postar invoice
-  8. Finalizar
-  9. Notificar
-- Usa:
-  - `PORepository`
-  - `SAPGateway`
-  - `NotificationService`
-  - Entidade `PurchaseOrder`
+- vê a lista de POs
+- filtra por status
+- processa, aprova ou rejeita
+- exporta CSV
 
-### `application/use_cases/approve_po.py`
-- Fluxo de **aprovação/rejeição manual**.
-- Posta invoice se `post_invoice = True`.
+### 2) API
 
-### `application/use_cases/process_material.py`
-- Fluxo de materiais (estoque + POs abertas).
-- Usa `ERPProviderPort`, `RepositoryPort`, `NotificationPort`.
+É a “porta de entrada”:
 
-### `application/ports/__init__.py`
-- Exporta interfaces de portas.
+- recebe o clique da tela
+- transforma isso em comandos
+- envia para a lógica do sistema
 
-### `application/ports/erp_provider_port.py`
-- Contrato para consulta de estoque/POs em ERP.
+### 3) Regras do sistema
 
-### `application/ports/repository_port.py`
-- Contrato para armazenar histórico de materiais.
+Aqui o sistema decide o que fazer:
 
-### `application/ports/notification_port.py`
-- Contrato simples de envio de email (fluxo de materiais).
+- valida dados
+- compara com SAP
+- exige aprovação quando necessário
+- conclui e registra o resultado
+
+### 4) Integrações
+
+Onde o sistema grava e consulta:
+
+- banco de dados (SQLite)
+- SAP (simulado)
+- notificações (simples no demo)
 
 ---
 
-## Domain
+## Fluxo completo (passo a passo, sem termos técnicos)
 
-### `domain/__init__.py`
-- Marca `domain` como pacote.
-
-### `domain/entities/__init__.py`
-- Marca `entities` como pacote.
-
-### `domain/entities/purchase_order.py`
-- Entidade central `PurchaseOrder`.
-- Regras de transição de status.
-- Lock / unlock.
-- Validações de consistência.
-
-### `domain/entities/material_status.py`
-- Entidade e estados do fluxo de materiais.
-
-### `domain/interfaces/__init__.py`
-- Exporta as interfaces do domínio.
-
-### `domain/interfaces/po_repository.py`
-- Contrato do repositório de POs.
-
-### `domain/interfaces/sap_gateway.py`
-- Contrato do gateway SAP (async).
-
-### `domain/interfaces/notification_service.py`
-- Contrato de notificações (async).
-
-### `domain/exceptions/__init__.py`
-- Marca `exceptions` como pacote.
-
-### `domain/exceptions/domain_exceptions.py`
-- Exceções específicas de negócio.
-
-### `domain/events/__init__.py`
-- Marca `events` como pacote.
-
-### `domain/events/po_events.py`
-- Eventos de domínio (registrados pelo fluxo).
+1. O usuário clica **Processar**
+2. A API recebe essa ação
+3. O sistema busca a PO no banco
+4. Valida dados básicos
+5. Busca informações no SAP (demo)
+6. Confere se os dados batem
+7. Se o valor for alto, pede aprovação
+8. Se aprovado, finaliza
+9. Registra tudo no banco
+10. Notifica (no demo é log simples)
 
 ---
 
-## Infrastructure
+## Como os arquivos se conectam (visão clara)
 
-### Pacotes
-- `infrastructure/__init__.py`
-- `infrastructure/persistence/__init__.py`
-- `infrastructure/persistence/sqlalchemy/__init__.py`
-- `infrastructure/erp/__init__.py`
-- `infrastructure/sap/__init__.py`
-- `infrastructure/messaging/__init__.py`
-- `infrastructure/repository/__init__.py`
+### UI → API
 
-### Persistência (SQLite + SQLAlchemy)
-- `infrastructure/persistence/sqlalchemy/models.py`
-  - Modelos `POModel` e `POItemModel`.
-- `infrastructure/persistence/sqlalchemy/database.py`
-  - Engine async e `sessionmaker`.
-- `infrastructure/persistence/sqlalchemy/po_repository_impl.py`
-  - Implementa `PORepository` usando SQLAlchemy.
-- `infrastructure/persistence/sqlalchemy/seed.py`
-  - Seed inicial do banco.
+- `ui/src/components/POPRDashboard.jsx`
+  - faz as chamadas para `/api/v1/pos/*`
+- `ui/vite.config.js`
+  - aponta a API para `http://localhost:5174`
 
-### SAP / ERP
+### API → Lógica
+
+- `api/routes/po_routes.py`
+  - recebe a requisição
+  - chama o caso de uso correto
+- `api/dependencies.py`
+  - entrega as dependências certas
+
+### Lógica → Regras
+
+- `application/use_cases/process_po.py`
+  - orquestra o fluxo completo
+- `domain/entities/purchase_order.py`
+  - contém regras e validações reais
+
+### Regras → Infra
+
+- `infrastructure/persistence/sqlalchemy/*`
+  - salva e busca dados no banco
 - `infrastructure/sap/demo_sap_gateway.py`
-  - SAP demo: lê `demo_po_data.json` e simula SAP.
-- `infrastructure/sap/sap_gui_adapter.py`
-  - Adapter real via SAP GUI Scripting.
-- `infrastructure/erp/demo_provider.py`
-  - Provider demo para fluxo de materiais.
-- `infrastructure/erp/sap_gui_provider.py`
-  - Provider stub (não implementado).
-
-### Mensageria / Notificação
-- `infrastructure/messaging/simple_notification_service.py`
-  - Notificação simples (log).
-- `infrastructure/messaging/email_adapter.py`
-  - Envio SMTP (notificações formais).
-- `infrastructure/messaging/slack_adapter.py`
-  - Envio via webhook do Slack.
-- `infrastructure/messaging/simple_email_notification.py`
-  - Implementa `NotificationPort` do fluxo de materiais.
-
-### Repositório de materiais
-- `infrastructure/repository/json_status_repository.py`
-  - Persistência do histórico de materiais em JSON.
-- `infrastructure/repository/material_history.json`
-  - Dados persistidos do histórico.
+  - SAP simulado (para teste)
+- `infrastructure/messaging/*`
+  - notificações simples
 
 ---
 
-## UI
+## Explicação arquivo por arquivo (detalhada e simples)
 
-### `ui/index.html`
-- Ponto de entrada do Vite.
+### API
 
-### `ui/vite.config.js`
-- Proxy `/api` → `http://localhost:5174` (backend).
+- `api/main.py`  
+  Cria o servidor e registra as rotas. Também prepara o banco e coloca dados de exemplo.
 
-### `ui/package.json` / `ui/package-lock.json`
-- Dependências e scripts do frontend.
+- `api/dependencies.py`  
+  Decide qual implementação será usada (SAP demo, notificações simples, banco SQLite).
 
-### `ui/src/main.jsx`
-- Bootstrap React (`createRoot`).
+- `api/routes/po_routes.py`  
+  Endpoints de PO (processar, aprovar, rejeitar, listar).
 
-### `ui/src/App.jsx`
-- Renderiza `POPRDashboard`.
+- `api/routes/material_routes.py`  
+  Endpoints do fluxo de materiais (separado do fluxo principal).
 
-### `ui/src/components/POPRDashboard.jsx`
-- Tela principal.
-- Busca POs na API.
-- Aciona Processar/Aprovar/Rejeitar.
+### Application (casos de uso)
 
-### `ui/src/index.css`
-- Estilos globais do dashboard.
+- `application/use_cases/process_po.py`  
+  O “maestro”: chama as etapas uma a uma.
+
+- `application/use_cases/approve_po.py`  
+  Aprovação e rejeição manual.
+
+- `application/use_cases/process_material.py`  
+  Fluxo mais simples de materiais.
+
+### Domain (regras do negócio)
+
+- `domain/entities/purchase_order.py`  
+  Define o que é uma PO e como ela muda de status.
+
+- `domain/interfaces/po_repository.py`  
+  Contrato para salvar/buscar POs.
+
+- `domain/interfaces/sap_gateway.py`  
+  Contrato de integração com SAP.
+
+- `domain/interfaces/notification_service.py`  
+  Contrato de notificações.
+
+- `domain/exceptions/domain_exceptions.py`  
+  Erros de negócio padronizados.
+
+### Infrastructure (onde as coisas realmente acontecem)
+
+- `infrastructure/persistence/sqlalchemy/models.py`  
+  Estrutura das tabelas no banco.
+
+- `infrastructure/persistence/sqlalchemy/database.py`  
+  Conexão com o banco.
+
+- `infrastructure/persistence/sqlalchemy/po_repository_impl.py`  
+  Salva e busca POs no banco.
+
+- `infrastructure/persistence/sqlalchemy/seed.py`  
+  Cria dados de exemplo no banco.
+
+- `infrastructure/sap/demo_sap_gateway.py`  
+  SAP simulado para testes.
+
+- `infrastructure/sap/sap_gui_adapter.py`  
+  Integração real via SAP GUI (não usada no demo).
+
+- `infrastructure/messaging/simple_notification_service.py`  
+  Notificação simples (apenas log).
+
+- `infrastructure/messaging/email_adapter.py`  
+  Envio real de email via SMTP.
+
+- `infrastructure/messaging/slack_adapter.py`  
+  Notificação via webhook do Slack.
+
+### UI
+
+- `ui/index.html`  
+  Entrada do frontend.
+
+- `ui/src/main.jsx`  
+  Inicializa o React.
+
+- `ui/src/App.jsx`  
+  Renderiza o dashboard.
+
+- `ui/src/components/POPRDashboard.jsx`  
+  Tela principal e ações.
 
 ---
 
-## Dados e arquivos gerados
+## Arquivos de dados
 
-### `infrastructure/erp/demo_po_data.json`
-- Dados demo de POs (seed do banco e SAP demo).
+- `infrastructure/erp/demo_po_data.json`  
+  Dados de POs simuladas (demo).
 
-### `infrastructure/erp/demo_data.json`
-- Dados demo do fluxo de materiais.
+- `infrastructure/erp/demo_data.json`  
+  Dados de materiais simulados.
 
-### `popr.db`
-- SQLite gerado automaticamente.
-
-### `uvicorn.out.log` / `uvicorn.err.log`
-- Logs do backend (gerados no ambiente local).
+- `popr.db`  
+  Banco gerado automaticamente.
 
 ---
 
-## Execução local
+## Como rodar
 
-Backend (porta 5174):
+Backend:
+
 ```bash
 python -m uvicorn api.main:app --port 5174
 ```
 
-Frontend (porta 5173):
+Frontend:
+
 ```bash
 cd ui
 npm run dev
 ```
-
----
-
-## Observações
-
-- Arquivos `__pycache__/*.pyc` são artefatos do Python e podem ser ignorados.
-- A integração SAP real exige SAP GUI e `pywin32` instalado.
