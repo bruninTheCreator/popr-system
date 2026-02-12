@@ -11,8 +11,8 @@ import logging
 from datetime import datetime
 
 # Domain imports
-from ...domain.entities.purchase_order import PurchaseOrder
-from ...domain.interfaces.notification_service import NotificationService
+from domain.entities.purchase_order import PurchaseOrder
+from domain.interfaces.notification_service import NotificationService
 
 
 class EmailConfig:

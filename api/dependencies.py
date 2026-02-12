@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from fastapi import Depends
 
+<<<<<<< Updated upstream
 from ..infrastructure.persistence.sqlalchemy.database import Database
 from ..infrastructure.persistence.sqlalchemy.po_repository_impl import SQLAlchemyPORepository
 from ..infrastructure.sap.sap_gui_adapter import SAPGUIAdapter
@@ -28,6 +29,20 @@ from ..domain.interfaces.notification_service import NotificationService
 DATABASE_URL = "sqlite+aiosqlite:///./popr.db"
 db = Database(DATABASE_URL)
 BASE_DIR = Path(__file__).resolve().parents[1]
+=======
+from api.config import get_settings
+from infrastructure.persistence.sqlalchemy.database import Database
+from infrastructure.persistence.sqlalchemy.po_repository_impl import SQLAlchemyPORepository
+from infrastructure.sap.sap_gui_adapter import SAPGUIAdapter
+from infrastructure.messaging.email_adapter import EmailNotificationService, EmailConfig
+from infrastructure.messaging.slack_adapter import SlackNotificationService
+from application.use_cases.process_po import ProcessPOUseCase
+from application.use_cases.approve_po import ApprovePOUseCase, RejectPOUseCase
+from domain.interfaces.notification_service import NotificationService
+
+settings = get_settings()
+db = Database(settings.database_url)
+>>>>>>> Stashed changes
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -67,11 +82,11 @@ async def get_sap_gateway() -> AsyncGenerator[SAPGUIAdapter, None]:
     TODO: Configurar com variáveis de ambiente
     """
     sap = SAPGUIAdapter(
-        system_id="PRD",
-        client="100",
-        user="SAP_USER",
-        password="SAP_PASS",
-        language="PT"
+        system_id=settings.sap_system_id,
+        client=settings.sap_client,
+        user=settings.sap_user,
+        password=settings.sap_password,
+        language=settings.sap_language,
     )
     
     # Conecta
@@ -91,12 +106,12 @@ async def get_notification_service() -> NotificationService:
     """
     # Email config
     email_config = EmailConfig(
-        smtp_host="smtp.gmail.com",
-        smtp_port=587,
-        smtp_user="popr@company.com",
-        smtp_password="app_password",
-        from_email="popr@company.com",
-        from_name="POPR System"
+        smtp_host=settings.smtp_host,
+        smtp_port=settings.smtp_port,
+        smtp_user=settings.smtp_user,
+        smtp_password=settings.smtp_password,
+        from_email=settings.smtp_from_email,
+        from_name=settings.smtp_from_name,
     )
     
     return EmailNotificationService(email_config)
@@ -130,6 +145,7 @@ async def get_reject_po_use_case(
 ) -> RejectPOUseCase:
     """Retorna o use case de rejeitar PO"""
     return RejectPOUseCase(repo, notifier, logger)
+<<<<<<< Updated upstream
 
 
 # =============================================================================
@@ -159,3 +175,5 @@ def get_process_material_use_case(
     notifier = Depends(get_material_notifier),
 ) -> ProcessMaterialUseCase:
     return ProcessMaterialUseCase(erp_provider, repository, notifier)
+=======
+>>>>>>> Stashed changes

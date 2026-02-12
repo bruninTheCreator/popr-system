@@ -7,8 +7,8 @@ import aiohttp
 from typing import List, Optional
 import logging
 
-from ...domain.entities.purchase_order import PurchaseOrder
-from ...domain.interfaces.notification_service import NotificationService
+from domain.entities.purchase_order import PurchaseOrder
+from domain.interfaces.notification_service import NotificationService
 
 
 class SlackNotificationService(NotificationService):

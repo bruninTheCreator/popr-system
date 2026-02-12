@@ -12,7 +12,7 @@ from datetime import datetime
 import time
 
 # Domain imports
-from ...domain.interfaces.sap_gateway import SAPGateway
+from domain.interfaces.sap_gateway import SAPGateway
 
 
 class SAPConnectionError(Exception):
